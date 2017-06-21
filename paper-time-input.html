@@ -21,7 +21,7 @@ Custom property | Description | Default
 ----------------|-------------|----------
 `--paper-time-input-dropdown-ripple-color` | dropdown ripple color | `--primary-color`
 `--paper-time-input-cotnainer` | Mixin applied to the inputs | `{}`
-`--paper-time-dropdown-input-cotnainer` | Mixin applied to the dropdown input | `{}`
+`--paper-time-dropdown-input-container` | Mixin applied to the dropdown input | `{}`
 
 - paper-menu-button 2.0 depends on neon-animation 2.0, which doesn't import the Web Animations polyfill, so you'll have to import it
 
@@ -105,13 +105,14 @@ Custom property | Description | Default
         id="hour"
         type="number"
         value="{{hour}}"
-        on-change="_shouldFormatHour"
+        on-change="_formatHour"
         required
         auto-validate="[[autoValidate]]"
         prevent-invalid-input
         maxlength="2"
         max="[[_computeHourMax(format)]]"
         min="0"
+        step="1"
         no-label-float
         disabled="[[disabled]]">
         <span suffix slot="suffix">:</span>
@@ -129,8 +130,10 @@ Custom property | Description | Default
         maxlength="2"
         max="59"
         min="0"
+        step="1"
         no-label-float
         disabled="[[disabled]]">
+        <span suffix slot="suffix">:</span>
       </paper-input>
 
       <!-- Seconds Input -->
@@ -145,8 +148,10 @@ Custom property | Description | Default
         maxlength="2"
         max="59"
         min="0"
+        step="1"
         no-label-float
         disabled="[[disabled]]">
+        <span suffix slot="suffix">:</span>
       </paper-input>
 
       <!-- Milliseconds Input -->
@@ -161,6 +166,7 @@ Custom property | Description | Default
         maxlength="3"
         max="999"
         min="0"
+        step="1"
         no-label-float
         disabled="[[disabled]]">
       </paper-input>
@@ -213,7 +219,7 @@ Custom property | Description | Default
          */
         format: {
           type: Number,
-          value: 12
+          value: 24
         },
         /**
          * disables the inputs
@@ -227,28 +233,32 @@ Custom property | Description | Default
          */
         hour: {
           type: Number,
-          notify: true
+          notify: true,
+          value: 0,
         },
         /**
          * minute
          */
         min: {
           type: Number,
-          notify: true
+          notify: true,
+          value: 0,
         },
         /**
          * minute
          */
         sec: {
           type: Number,
-          notify: true
+          notify: true,
+          value: 0,
         },
         /**
          * minute
          */
         msec: {
           type: Number,
-          notify: true
+          notify: true,
+          value: 0,
         },
         /**
          * AM or PM
@@ -264,10 +274,40 @@ Custom property | Description | Default
         value: {
           type: String,
           notify: true,
-          readOnly: true,
-          computed: '_computeTime(msec, sec, min, hour, amPm)'
         },
+        
+        valueInput: {
+          type: String,
+          notify: true,
+          observer: '_valueInputChanged',
+        },
+
       },
+
+      observers: [
+        '_computeTime(msec, sec, min, hour, amPm)',
+      ],
+
+      _valueInputChanged: function(value){
+        if(value){
+          var m = value.match(/^(\d\d):(\d\d):(\d\d):(\d\d\d)\ ?([AP]M)?$/);
+          if(m){
+            this.hour = m[1];
+            this.min = m[2];
+            this.sec = m[3];
+            this.msec = m[4];
+            if(m[5]){
+              this.amPm = m[5];
+              this.format = 12;
+            }
+            else{
+              this.amPm = '';
+              this.format = 24
+            }
+          }
+        }
+      },
+
       /**
        * Validate the inputs
        * @return {boolean}
@@ -289,52 +329,27 @@ Custom property | Description | Default
        * Create time string
        */
       _computeTime: function(msec, sec, min, hour, amPm){
+        if(!this.validate()){
+          return;
+        }
         // No ampm on 24 hr time
-        if (this.format == 24) {
-          amPm = "";
+        if(this.format == 24){
+          amPm = null;
         }
-        if (hour && min && sec && msec) {
-          return hour + ":" + min + ":" + sec + ":" + msec + " " + amPm;
-        }
+        this.value = this.hour + ":" 
+                   + this.min + ":" 
+                   + this.sec + ":" 
+                   + this.msec 
+                   + (amPm ? (" " + amPm) : "");
       },
       /**
        * Pad string
        */
-      _pad: function(n, width, z) {
-          z = z || '0';
-          if(n<=0)
-              n = 0;
-          n = n.toFixed(0) + '';
-          return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+      _pad: function(n, width, z){
+          n = parseInt(n).toString();
+          return n.length >= width ? n : new Array(width - n.length + 1).join(z || '0') + n;
       },
-      /**
-       * Format min
-       */
-      _formatMin: function(){
-        if(this.min.toString().length === 1){
-          this.min = (this.min < 10) ? ("0" + this.min) : this.min;
-        }
-      },
-      /**
-       * Format sec
-       */
-      _formatSec: function(){
-        this.sec = this._pad(this.sec, 2);
-      },
-      /**
-       * Format msec
-       */
-      _formatMsec: function(){
-        this.msec = this._pad(this.msec, 3);
-      },
-      /**
-       * Hour needs a leading zero in 24hr format
-       */
-      _shouldFormatHour: function(){
-        if(this.format == "24" && this.hour.toString().length === 1){
-          this.hour = (this.hour < 10) ? ("0" + this.hour) : this.hour;
-        }
-      },
+      
       /**
        * 24 hour format has a max hr of 23
        */
@@ -349,7 +364,25 @@ Custom property | Description | Default
         if (n1 == n2) {
           return true
         }
-      }
+      },
+
+      _formatHour: function(){
+        this.hour = this._pad(this.hour, 2);
+      },
+
+      _formatMin: function(){
+        this.min = this._pad(this.min, 2);
+      },
+
+      _formatSec: function(){
+        this.sec = this._pad(this.sec, 2);
+      },
+
+      _formatMsec: function(){
+        this.msec = this._pad(this.msec, 3);
+      },
+
+
     });
   </script>
 </dom-module>
