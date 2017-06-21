@@ -133,6 +133,38 @@ Custom property | Description | Default
         disabled="[[disabled]]">
       </paper-input>
 
+      <!-- Seconds Input -->
+      <paper-input
+        id="sec"
+        type="number"
+        value="{{sec}}"
+        on-change="_formatSec"
+        required
+        auto-validate="[[autoValidate]]"
+        prevent-invalid-input
+        maxlength="2"
+        max="59"
+        min="0"
+        no-label-float
+        disabled="[[disabled]]">
+      </paper-input>
+
+      <!-- Milliseconds Input -->
+      <paper-input
+        id="msec"
+        type="number"
+        value="{{msec}}"
+        on-change="_formatMsec"
+        required
+        auto-validate="[[autoValidate]]"
+        prevent-invalid-input
+        maxlength="3"
+        max="999"
+        min="0"
+        no-label-float
+        disabled="[[disabled]]">
+      </paper-input>
+
       <!-- Dropdown Menu -->
       <paper-dropdown-menu
         id="dropdown"
@@ -205,6 +237,20 @@ Custom property | Description | Default
           notify: true
         },
         /**
+         * minute
+         */
+        sec: {
+          type: Number,
+          notify: true
+        },
+        /**
+         * minute
+         */
+        msec: {
+          type: Number,
+          notify: true
+        },
+        /**
          * AM or PM
          */
         amPm: {
@@ -219,7 +265,7 @@ Custom property | Description | Default
           type: String,
           notify: true,
           readOnly: true,
-          computed: '_computeTime(min, hour, amPm)'
+          computed: '_computeTime(msec, sec, min, hour, amPm)'
         },
       },
       /**
@@ -229,7 +275,7 @@ Custom property | Description | Default
       validate: function(){
         var valid = true;
         // Validate hour & min fields
-        if(!this.$.hour.validate() | !this.$.min.validate()){
+        if(!this.$.hour.validate() | !this.$.min.validate() | !this.$.sec.validate() | !this.$.msec.validate()){
           valid = false;
         }
         // Validate AM PM if 12 hour time
@@ -242,14 +288,24 @@ Custom property | Description | Default
       /**
        * Create time string
        */
-      _computeTime: function(min, hour, amPm){
+      _computeTime: function(msec, sec, min, hour, amPm){
         // No ampm on 24 hr time
         if (this.format == 24) {
           amPm = "";
         }
-        if (hour && min) {
-          return hour + ":" + min + " " + amPm;
+        if (hour && min && sec && msec) {
+          return hour + ":" + min + ":" + sec + ":" + msec + " " + amPm;
         }
+      },
+      /**
+       * Pad string
+       */
+      _pad: function(n, width, z) {
+          z = z || '0';
+          if(n<=0)
+              n = 0;
+          n = n.toFixed(0) + '';
+          return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
       },
       /**
        * Format min
@@ -258,6 +314,18 @@ Custom property | Description | Default
         if(this.min.toString().length === 1){
           this.min = (this.min < 10) ? ("0" + this.min) : this.min;
         }
+      },
+      /**
+       * Format sec
+       */
+      _formatSec: function(){
+        this.sec = this._pad(this.sec, 2);
+      },
+      /**
+       * Format msec
+       */
+      _formatMsec: function(){
+        this.msec = this._pad(this.msec, 3);
       },
       /**
        * Hour needs a leading zero in 24hr format
