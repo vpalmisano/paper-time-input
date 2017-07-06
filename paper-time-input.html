@@ -141,7 +141,7 @@ Custom property | Description | Default
         step="1"
         no-label-float
         disabled="[[disabled]]">
-        <span suffix slot="suffix">.</span>
+        <span suffix slot="suffix">:</span>
       </paper-input>
 
       <!-- Milliseconds Input -->
@@ -280,7 +280,7 @@ Custom property | Description | Default
 
       _valueInputChanged: function(value){
         if(value){
-          var m = value.match(/^(\d\d):(\d\d):(\d\d).(\d\d\d)\ ?([AP]M)?$/);
+          var m = value.match(/^(\d\d):(\d\d):(\d\d):(\d\d\d)\ ?([AP]M)?$/);
           if(m){
             this.hour = m[1];
             this.min = m[2];
@@ -328,7 +328,7 @@ Custom property | Description | Default
         }
         this.value = this.hour + ":" 
                    + this.min + ":" 
-                   + this.sec + "." 
+                   + this.sec + ":" 
                    + this.msec 
                    + (amPm ? (" " + amPm) : "");
       },
